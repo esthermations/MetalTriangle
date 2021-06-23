@@ -1,0 +1,9 @@
+BasedOnStyle                 : LLVM
+IndentWidth                  : 3
+Language                     : ObjC
+PointerAlignment             : Right
+ColumnLimit                  : 79
+AlignAfterOpenBracket        : AlwaysBreak
+AlignConsecutiveAssignments  : true # Consecutive
+AlignConsecutiveDeclarations : true # AcrossEmptyLinesAndComments
+AlwaysBreakAfterReturnType   : AllDefinitions
