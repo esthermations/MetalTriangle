@@ -1,13 +1,17 @@
+#import "ViewDelegate.h"
+
 #import <Cocoa/Cocoa.h>
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
+#import <cassert>
 
-#import "ViewDelegate.h"
-
-constexpr NSRect WindowRect = {.origin = {0, 0}, .size = {1280, 720}};
+constexpr NSRect         WindowRect    = {{0, 0}, {1280, 720}};
+constexpr NSTimeInterval FrameDuration = 16.66 / 1000.0; // 16.66 ms
+constexpr MTLClearColor  ClearColour   = {0.1, 0.2, 0.5, 1.0};
 
 int
-main(int, char **) {
+main(int, char **)
+{
    [NSApplication sharedApplication];
 
    NSError *Errors;
@@ -22,67 +26,23 @@ main(int, char **) {
 
    [Window setTitle:@"Esther messing around with Metal"];
    [Window center];
-   [Window makeKeyAndOrderFront:nil];
 
-   MTKView *MetalView = [[MTKView alloc] initWithFrame:WindowRect];
+   MTKView *     MetalView = [[MTKView alloc] initWithFrame:WindowRect];
+   ViewDelegate *Delegate  = [ViewDelegate new];
 
-   id<MTLDevice>       Device = MTLCreateSystemDefaultDevice();
-   id<MTLCommandQueue> Queue  = [Device newCommandQueue];
-   id<MTLLibrary> Library     = [Device newLibraryWithFile:@"Triangle.metallib"
-                                                 error:&Errors];
-
-   ViewDelegate *Delegate = [ViewDelegate init];
-
-   [MetalView setDevice:Device];
+   [MetalView setDevice:[Delegate getDevice]];
    [MetalView setDelegate:Delegate];
    [MetalView setFramebufferOnly:YES];
    [MetalView setColorPixelFormat:MTLPixelFormatBGRA8Unorm];
    [MetalView setAutoResizeDrawable:NO];
+   [MetalView setDrawableSize:WindowRect.size];
+   [MetalView setClearColor:ClearColour];
+   [MetalView setEnableSetNeedsDisplay:NO];
 
-   id<MTLFunction> VertShader = [Library newFunctionWithName:@"VertMain"];
-   id<MTLFunction> FragShader = [Library newFunctionWithName:@"FragMain"];
+   [Window setContentView:MetalView];
+   [Window makeKeyAndOrderFront:nil];
 
-   MTLRenderPipelineDescriptor *PipelineDesc =
-       [MTLRenderPipelineDescriptor new];
-   [PipelineDesc setVertexFunction:VertShader];
-   [PipelineDesc setFragmentFunction:FragShader];
+   [MetalView setPaused:NO];
 
-   PipelineDesc.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
-
-   id<MTLRenderPipelineState> Pipeline =
-       [Device newRenderPipelineStateWithDescriptor:PipelineDesc
-                                              error:&Errors];
-
-   NSAssert(Pipeline, @"Failed to create a pipeline");
-
-   id<CAMetalDrawable> Drawable = [MetalView currentDrawable];
-   NSAssert(Drawable, @"No drawable!");
-
-   [MetalView setClearColor:MTLClearColorMake(0.1, 0.5, 0.1, 1.0)];
-
-   MTLRenderPassDescriptor *PassDesc = [MetalView currentRenderPassDescriptor];
-   NSAssert(PassDesc, @"No pass descriptor!");
-
-   constexpr NSTimeInterval FrameDuration = 16.66 / 1000.0;
-
-   while (true) {
-      NSDate *Deadline = [NSDate dateWithTimeIntervalSinceNow:FrameDuration];
-
-      id<MTLCommandBuffer> CmdBuf = [Queue commandBuffer];
-
-      id<MTLRenderCommandEncoder> Encoder =
-          [CmdBuf renderCommandEncoderWithDescriptor:PassDesc];
-
-      [Encoder setRenderPipelineState:Pipeline];
-      [Encoder drawPrimitives:MTLPrimitiveTypeTriangle
-                  vertexStart:0
-                  vertexCount:3];
-
-      [Encoder popDebugGroup];
-      [Encoder endEncoding];
-
-      [CmdBuf commit];
-
-      [NSThread sleepUntilDate:Deadline];
-   }
+   [NSApp run];
 }

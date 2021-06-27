@@ -7,4 +7,6 @@
 - (void)mtkView:(MTKView *)view drawableSizeWillChange:(CGSize)size;
 - (void)drawInMTKView:(MTKView *)view;
 
+- (id<MTLDevice>)getDevice;
+
 @end
