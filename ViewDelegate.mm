@@ -1,22 +1,51 @@
 #import "ViewDelegate.h"
 
+#import "ShaderDecls.h"
+#import "Util.h"
+
 #import <Foundation/Foundation.h>
+#import <Metal/MTLBuffer.h>
+#import <Metal/MTLResource.h>
 #import <cassert>
 
+
+static void
+FillDescriptorArray( MTLVertexAttributeDescriptorArray *Array )
+{
+   assert( Array );
+   Array[ attributes::Position ].format      = MTLVertexFormatFloat3;
+   Array[ attributes::Position ].offset      = 0;
+   Array[ attributes::Position ].bufferIndex = 0;
+}
+
+
 @implementation ViewDelegate
+
+constexpr simd::packed::float4 TriangleVertexData[ 3 ] = {
+    {-0.5, -0.5, 0, 1},
+    { 0.5, -0.5, 0, 1},
+    {   0,  0.5, 0, 1}
+};
+
+static_assert(
+    sizeof( TriangleVertexData ) == ( 3 * 4 * sizeof( float ) ), ""
+);
 
 id<MTLDevice>              Device;
 id<MTLCommandQueue>        Queue;
 id<MTLLibrary>             Library;
 id<MTLRenderPipelineState> Pipeline;
+id<MTLBuffer>              VertexBuffer;
 
 NSError *Errors;
 
+
 - (id<MTLDevice>)getDevice
 {
-   assert(Device);
+   assert( Device );
    return Device;
 }
+
 
 - (instancetype)init
 {
@@ -26,10 +55,13 @@ NSError *Errors;
    Queue   = [Device newCommandQueue];
    Library = [Device newLibraryWithFile:@"Triangle.metallib" error:&Errors];
 
-   if (Errors) {
-      NSLog(@"%@", Errors);
-      assert(not Errors);
-   }
+   util::ReportErrors( Errors );
+
+   GOT_HERE();
+
+   VertexBuffer = [Device newBufferWithBytes:&TriangleVertexData
+                                      length:( 3 * 4 * sizeof( float ) )
+                                     options:MTLResourceStorageModeManaged];
 
    id<MTLFunction> VertShader = [Library newFunctionWithName:@"VertMain"];
    id<MTLFunction> FragShader = [Library newFunctionWithName:@"FragMain"];
@@ -38,33 +70,53 @@ NSError *Errors;
    [PipelineDesc setVertexFunction:VertShader];
    [PipelineDesc setFragmentFunction:FragShader];
 
-   PipelineDesc.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+   GOT_HERE();
+
+   auto *VertexDescriptor = [MTLVertexDescriptor vertexDescriptor];
+   FillDescriptorArray( VertexDescriptor.attributes );
+
+   VertexDescriptor.layouts[ 0 ].stride = ( 4 * sizeof( float ) );
+
+   GOT_HERE();
+
+   [PipelineDesc setVertexDescriptor:VertexDescriptor];
+   [PipelineDesc setLabel:@"Triangle Pipeline Descriptor"];
+
+   PipelineDesc.colorAttachments[ 0 ].pixelFormat = MTLPixelFormatBGRA8Unorm;
+
+   GOT_HERE();
 
    Pipeline = [Device newRenderPipelineStateWithDescriptor:PipelineDesc
                                                      error:&Errors];
-   assert(Pipeline);
+
+   GOT_HERE();
+
+   util::ReportErrors( Errors );
+   assert( Pipeline );
 
    return self;
 }
 
+
 - (void)mtkView:(MTKView *)View drawableSizeWillChange:(CGSize)size
 {
-   NSLog(@"%s doing nothing.", __PRETTY_FUNCTION__);
+   NSLog( @"%s doing nothing.", __PRETTY_FUNCTION__ );
 }
+
 
 - (void)drawInMTKView:(MTKView *)View
 {
-   assert(View);
+   assert( View );
 
    static unsigned FrameNumber = 0;
-   NSLog(@"Drawing frame %u", FrameNumber);
+   NSLog( @"Drawing frame %u", FrameNumber );
    ++FrameNumber;
 
    id<CAMetalDrawable> Drawable = [View currentDrawable];
-   assert(Drawable);
+   assert( Drawable );
 
    MTLRenderPassDescriptor *PassDesc = [View currentRenderPassDescriptor];
-   assert(PassDesc);
+   assert( PassDesc );
 
    auto CmdBuf  = [Queue commandBuffer];
    auto Encoder = [CmdBuf renderCommandEncoderWithDescriptor:PassDesc];
@@ -85,9 +137,10 @@ NSError *Errors;
    // Draw a triangle
    {
       [Encoder pushDebugGroup:@"Drawing a triangle"];
+      [Encoder setVertexBuffer:VertexBuffer offset:0 atIndex:0];
       [Encoder drawPrimitives:MTLPrimitiveTypeTriangle
-                  vertexStart:0
-                  vertexCount:3];
+                indirectBuffer:VertexBuffer
+          indirectBufferOffset:0];
       [Encoder popDebugGroup];
    }
 
@@ -95,5 +148,6 @@ NSError *Errors;
    [CmdBuf presentDrawable:Drawable];
    [CmdBuf commit];
 }
+
 
 @end

@@ -1,4 +1,9 @@
 #import <metal_math>
+#import "ShaderDecls.h"
+
+struct VertexIn {
+   float4 Position [[attribute(attributes::Position)]];
+};
 
 struct VertexOut {
    float4 Position [[position]];
@@ -6,22 +11,16 @@ struct VertexOut {
 };
 
 vertex VertexOut
-VertMain(uint VertexID [[vertex_id]])
+VertMain( uint VertexID [[vertex_id]], VertexIn Input [[stage_in]] )
 {
-   float4 Triangle[3] = {
-      float4( -0.5, -0.5, 0, 1 ),
-      float4(  0.5, -0.5, 0, 1 ),
-      float4(  0,    0.5, 0, 1 )
-   };
-
    return (VertexOut) {
-      .Position = Triangle[VertexID],
+      .Position = Input.Position,
       .ID       = VertexID,
    };
 }
 
 fragment float4
-FragMain(VertexOut input [[stage_in]])
+FragMain( VertexOut Input [[stage_in]] )
 {
    constexpr float4 Colour[3] = {
       float4(1, 0, 0, 1),
@@ -29,5 +28,5 @@ FragMain(VertexOut input [[stage_in]])
       float4(0, 0, 1, 1)
    };
 
-   return Colour[input.ID];
+   return Colour[Input.ID];
 }

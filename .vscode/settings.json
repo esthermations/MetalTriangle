@@ -1,0 +1,10 @@
+{
+    "editor.formatOnSave": true,
+    "discord.enabled": true,
+    "clangd.arguments": [
+        "-header-insertion=never"
+    ],
+    "files.associations": {
+        "*.h": "objective-cpp"
+    }
+}

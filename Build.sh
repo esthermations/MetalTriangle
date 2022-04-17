@@ -6,6 +6,7 @@ xcrun -sdk macosx metallib Triangle.air -o Triangle.metallib
 
 echo Compiling and linking...
 clang++ *.mm \
+   -g \
    -x objective-c++ \
    -std=c++17 \
    -framework Metal \

@@ -1,12 +1,17 @@
-BasedOnStyle                 : LLVM
-IndentWidth                  : 3
-Language                     : ObjC
-PointerAlignment             : Right
-ColumnLimit                  : 79
-BreakBeforeBraces            : Stroustrup
-AlignAfterOpenBracket        : AlwaysBreak
-AlignConsecutiveAssignments  : true # Consecutive
-AlignConsecutiveDeclarations : true # AcrossEmptyLinesAndComments
-AlwaysBreakAfterReturnType   : AllDefinitions
-IncludeBlocks                : Regroup
-MaxEmptyLinesToKeep          : 2
+BasedOnStyle: LLVM
+IndentWidth: 3
+Language: ObjC
+PointerAlignment: Right
+ColumnLimit: 79
+BreakBeforeBraces: Allman
+AlignAfterOpenBracket: BlockIndent
+AlignArrayOfStructures: Right
+AllowShortIfStatementsOnASingleLine: true
+SpacesInParentheses: true
+SpacesInSquareBrackets: true
+AlignConsecutiveAssignments: true # Consecutive
+AlignConsecutiveDeclarations: true # AcrossEmptyLinesAndComments
+AlwaysBreakAfterReturnType: AllDefinitions
+IncludeBlocks: Regroup
+MaxEmptyLinesToKeep: 2
+NamespaceIndentation: All
