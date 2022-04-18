@@ -7,7 +7,7 @@ struct VertexIn {
 
 struct VertexOut {
    float4 Position [[position]];
-   unsigned ID;
+   uint   ID;
 };
 
 vertex VertexOut
@@ -22,11 +22,6 @@ VertMain( uint VertexID [[vertex_id]], VertexIn Input [[stage_in]] )
 fragment float4
 FragMain( VertexOut Input [[stage_in]] )
 {
-   constexpr float4 Colour[3] = {
-      float4(1, 0, 0, 1),
-      float4(0, 1, 0, 1),
-      float4(0, 0, 1, 1)
-   };
-
-   return Colour[Input.ID];
+   float4 Colour = metal::abs(Input.Position);
+   return Colour;
 }

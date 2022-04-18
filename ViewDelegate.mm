@@ -9,6 +9,22 @@
 #import <cassert>
 
 
+namespace vertex_data
+{
+   constexpr simd::float4 Triangle[ 3 ] = {
+       {-0.5, -0.5, 0, 1},
+       { 0.5, -0.5, 0, 1},
+       {   0,  0.5, 0, 1}
+   };
+
+   constexpr simd::float4 UpsideDownTriangle[ 3 ] = {
+       {-0.5,  0.5, 0, 1},
+       { 0.5,  0.5, 0, 1},
+       {   0, -0.5, 0, 1}
+   };
+}
+
+
 static void
 FillDescriptorArray( MTLVertexAttributeDescriptorArray *Array )
 {
@@ -21,21 +37,13 @@ FillDescriptorArray( MTLVertexAttributeDescriptorArray *Array )
 
 @implementation ViewDelegate
 
-constexpr simd::packed::float4 TriangleVertexData[ 3 ] = {
-    {-0.5, -0.5, 0, 1},
-    { 0.5, -0.5, 0, 1},
-    {   0,  0.5, 0, 1}
-};
-
-static_assert(
-    sizeof( TriangleVertexData ) == ( 3 * 4 * sizeof( float ) ), ""
-);
-
 id<MTLDevice>              Device;
 id<MTLCommandQueue>        Queue;
 id<MTLLibrary>             Library;
 id<MTLRenderPipelineState> Pipeline;
-id<MTLBuffer>              VertexBuffer;
+
+id<MTLBuffer> TriangleVertexBuffer;
+id<MTLBuffer> UpsideDownTriangleVertexBuffer;
 
 NSError *Errors;
 
@@ -59,9 +67,15 @@ NSError *Errors;
 
    GOT_HERE();
 
-   VertexBuffer = [Device newBufferWithBytes:&TriangleVertexData
-                                      length:( 3 * 4 * sizeof( float ) )
-                                     options:MTLResourceStorageModeManaged];
+   TriangleVertexBuffer =
+       [Device newBufferWithBytes:&vertex_data::Triangle
+                           length:( 3 * 4 * sizeof( float ) )
+                          options:MTLResourceStorageModeManaged];
+
+   UpsideDownTriangleVertexBuffer =
+       [Device newBufferWithBytes:&vertex_data::UpsideDownTriangle
+                           length:( 3 * 4 * sizeof( float ) )
+                          options:MTLResourceStorageModeManaged];
 
    id<MTLFunction> VertShader = [Library newFunctionWithName:@"VertMain"];
    id<MTLFunction> FragShader = [Library newFunctionWithName:@"FragMain"];
@@ -109,7 +123,6 @@ NSError *Errors;
    assert( View );
 
    static unsigned FrameNumber = 0;
-   NSLog( @"Drawing frame %u", FrameNumber );
    ++FrameNumber;
 
    id<CAMetalDrawable> Drawable = [View currentDrawable];
@@ -134,14 +147,35 @@ NSError *Errors;
 
    [Encoder setViewport:Viewport];
 
+   bool DrawUpsideDown = ( ( FrameNumber % 200 ) < 100 );
+
+   NSLog(
+       @"Frame %u : Triangle is %s", FrameNumber,
+       DrawUpsideDown ? "upside-down" : "right-side-up"
+   );
+
    // Draw a triangle
    {
-      [Encoder pushDebugGroup:@"Drawing a triangle"];
-      [Encoder setVertexBuffer:VertexBuffer offset:0 atIndex:0];
-      [Encoder drawPrimitives:MTLPrimitiveTypeTriangle
-                  vertexStart:0
-                  vertexCount:3];
-      [Encoder popDebugGroup];
+      if ( not DrawUpsideDown )
+      {
+         [Encoder pushDebugGroup:@"Drawing a triangle"];
+         [Encoder setVertexBuffer:TriangleVertexBuffer offset:0 atIndex:0];
+         [Encoder drawPrimitives:MTLPrimitiveTypeTriangle
+                     vertexStart:0
+                     vertexCount:3];
+         [Encoder popDebugGroup];
+      }
+      else
+      {
+         [Encoder pushDebugGroup:@"Drawing an upside-down triangle"];
+         [Encoder setVertexBuffer:UpsideDownTriangleVertexBuffer
+                           offset:0
+                          atIndex:0];
+         [Encoder drawPrimitives:MTLPrimitiveTypeTriangle
+                     vertexStart:0
+                     vertexCount:3];
+         [Encoder popDebugGroup];
+      }
    }
 
    [Encoder endEncoding];
