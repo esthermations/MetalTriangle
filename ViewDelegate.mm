@@ -139,8 +139,8 @@ NSError *Errors;
       [Encoder pushDebugGroup:@"Drawing a triangle"];
       [Encoder setVertexBuffer:VertexBuffer offset:0 atIndex:0];
       [Encoder drawPrimitives:MTLPrimitiveTypeTriangle
-                indirectBuffer:VertexBuffer
-          indirectBufferOffset:0];
+                  vertexStart:0
+                  vertexCount:3];
       [Encoder popDebugGroup];
    }
 
